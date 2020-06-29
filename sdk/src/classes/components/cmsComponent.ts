@@ -21,9 +21,7 @@ export default class CmsComponent extends CmsCore implements IComponentProps {
             dataSource.index = index;
         }
         if (dataSource) {
-            const keys = Object.keys(this);
-            for (let i in keys) {
-                const key = keys[i];
+            for (const key of Object.keys(this)) {
                 const value = this[key];
                 if (value instanceof CmsField) {
                     const field = value as CmsField;

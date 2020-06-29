@@ -20,7 +20,7 @@ export default class CmsDropZoneComponent extends CmsComponent {
             const key = Object.keys(component)[0];
             const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.components[key]);
             const componentRef = viewContainerRef.createComponent(componentFactory);
-            (<CmsComponent>componentRef.instance).data = component[key];
+            (componentRef.instance as CmsComponent).data = component[key];
         })
     }
 }
