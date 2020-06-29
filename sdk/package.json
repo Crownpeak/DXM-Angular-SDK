@@ -1,0 +1,42 @@
+{
+  "name": "crownpeak-dxm-angular-sdk",
+  "version": "2.0.0",
+  "description": "Crownpeak Digital Experience Management (DXM)Software Development Kit (SDK) for Angular has been constructed to assist the Single Page App developer in developing client-side applications that leverage DXM for content management purposes.",
+  "repository": "https://github.com/Crownpeak/DXM-Angular-SDK",
+  "main": "dist/entry.js",
+  "author": "Crownpeak Technology, inc.",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.9.4",
+    "crownpeak-dxm-accessapi-helper": "^1.0.3",
+    "dotenv": "^8.2.0",
+    "@angular/animations": "~9.1.11",
+    "@angular/common": "~9.1.11",
+    "@angular/compiler": "~9.1.11",
+    "@angular/core": "~9.1.11",
+    "@angular/forms": "~9.1.11",
+    "@angular/platform-browser": "~9.1.11",
+    "@angular/platform-browser-dynamic": "~9.1.11",
+    "@angular/router": "~9.1.11",
+    "rxjs": "~6.5.4",
+    "tslib": "^1.10.0",
+    "zone.js": "~0.10.2"
+  },
+  "bin": {
+    "crownpeak": "./classes/crownpeak/cmsify.js"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "~0.901.8",
+    "@angular/cli": "~9.1.8",
+    "@angular/compiler-cli": "~9.1.11",
+    "prettier": "^2.0.5",
+    "tslint": "^6.1.2",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.9.5"
+  },
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json"
+  }
+}
