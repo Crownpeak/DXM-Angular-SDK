@@ -1,13 +1,8 @@
 const babelParser = require("@babel/parser");
-const fs = require("fs");
-const path = require('path');
 
-let _pageName = "";
 let _fileName = "";
 
-const reTemplate = /<template>\s*((?:.|\r|\n)+)\s*<\/template>/i;
-const reScript = /<script>\s*((?:.|\r|\n)+)\s*<\/script>/i;
-const extensions = [".js", ".ts"];
+const reTemplate = /template\s*:\s*`\s*((.|\s)*?)\s*`/;
 
 const parse = (content, file) => {
     _fileName = file;
@@ -15,14 +10,9 @@ const parse = (content, file) => {
     if (!match) return;
     let template = match[1];
 
-    match = reScript.exec(content);
-    if (!match) return;
-    
-    const script = match[1];
-
-    const ast = babelParser.parse(script, {
+    const ast = babelParser.parse(content, {
         sourceType: "module",
-        plugins: ["decorators"]
+        plugins: ["typescript", "decorators-legacy", "classProperties"]
     });
     //console.log(JSON.stringify(ast));
     if (ast.errors && ast.errors.length > 0) {
@@ -45,18 +35,16 @@ const parse = (content, file) => {
                 }
             }
         }
-        else if (part.type === "ExportDefaultDeclaration") {
-            const extnds = part.declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "extends");
-            let name = part.declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "name");
-            if (extnds && name && (extnds.value.name === "CmsDynamicPage" || extnds.value.name === "CmsStaticPage")) {
-                name = name.value.value;
-                //console.log(`Found page ${name} extending ${extnds.value.name}`);
-                const data = processCmsPage(content, ast, name, part.declaration, imports);
-                if (data && data.components) {
-                    const result = processCmsPageTemplate(content, name, template, data.components, imports);
-                    if (result) {
-                        results.push({name: name, content: finalProcessMarkup(result), wrapper: data.wrapper});
-                    }
+        else if (part.type === "ExportDefaultDeclaration" || part.type === "ExportNamedDeclaration") {
+            const extnds = part.declaration.superClass;
+            let name = part.declaration.id;
+            if (extnds && (extnds.name === "CmsDynamicPage" || extnds.name === "CmsStaticPage") && name) {
+                name = name.name;
+                //console.log(`Found page ${name} extending ${extnds.name}`);
+                const wrapper = processCmsPage(content, ast, name, part.declaration, imports);
+                const result = processCmsPageTemplate(content, name, template, null, imports);
+                if (result) {
+                    results.push({name: name, content: finalProcessMarkup(result), wrapper: wrapper});
                 }
             }
         }
@@ -100,72 +88,53 @@ const trimSharedLeadingWhitespace = (content) => {
 
 const processCmsPageTemplate = (content, name, template, components, imports) => {
     const componentRegexs = [
-        { source: "<(%%name%%)([^>]*?)(>.*?<\\/\\1>|\\/>)", replacement: "{%%name%%}" }
+        { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+component\\s*=\\s*([\"'])([^\"']+)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%name%%}</$1>" },
     ];
     let result = template;
-    // Longest name first to avoid substring replacements
-    var dataItems = components.sort((a, b) => b.name.length - a.name.length);
-    for (let i = 0, len = dataItems.length; i < len; i++) {
-        //console.log(`Looking for ${data[i].name}`);
-        for (let j = 0, lenJ = componentRegexs.length; j < lenJ; j++) {
-            let regex = new RegExp(componentRegexs[j].source.replace("%%name%%", components[i].name));
-            let match = regex.exec(result);
-            let index = 0;
-            while (match) {
-                let suffix = ++index > 1 ? "_" + index + ":" + components[i].componentName : "";
-                let replacement = componentRegexs[j].replacement.replace("%%name%%", components[i].name + suffix);
+    for (let i = 0, len = componentRegexs.length; i < len; i++) {
+        const regex = new RegExp(componentRegexs[i].source);
+        let match = regex.exec(result);
+        let componentTypes = {};
+        while (match) {
+            const componentType = match[4];
+            if (isDropZoneComponent(componentType)) {
+                const replacement = "<DropZone$2$5></DropZone>";
+                result = result.replace(regex, replacement);
+            } else {
+                const index = componentTypes[componentType] || 1;
+                const suffix = index > 1 ? "_" + index + ":" + componentType : "";
+                componentTypes[componentType] = index + 1;
+                const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
                 //console.log(`Replacing [${match[0]}] with [${replacement}]`);
                 result = result.replace(regex, replacement);
-                match = regex.exec(result);
             }
+            match = regex.exec(result);
         }
     }
+
     return result;
 };
 
 const processCmsPage = (content, ast, name, declaration, imports) => {
     _pageName = name;
     //console.log(`Processing CmsPage ${_pageName}`);
-    let results = [];
-    const components = declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "components");
-    if (components) {
-        const props = components.value.properties;
-        for (let i = 0; len = props.length, i < len; i++) {
-            const prop = props[i];
-            if (prop.type === "ObjectProperty") {
-                //console.log(`Found component property [${prop.key.name}]`);
-                importDefinition = imports.find(i => prop.key.name === i.name)
-                if (isDropZoneComponent(prop.key.name, importDefinition)) continue; // DropZones are processed by TemplateBuilder
-                results.push({
-                    name: prop.key.name,
-                    componentName: prop.key.name
-                });
-            }
+    let wrapper = null;
+    const ctor = declaration.body.body.find(p => p.type === "ClassMethod" && p.key && p.key.name === "constructor");
+    if (ctor) {
+        const wrapperBody = ctor.body.body.find(p => p.type === "ExpressionStatement" 
+            && p.expression.type && p.expression.type === "AssignmentExpression" 
+            && p.expression.left && p.expression.left.property && p.expression.left.property.name === "cmsWrapper");
+        if (wrapperBody) {
+            wrapper = wrapperBody.expression.right.value;
+            //console.log(`Found reference to wrapper [${wrapper}]`);
         }
     }
-    let wrapper = declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "cmsWrapper");
-    if (wrapper) {
-        //console.log(`Found reference to wrapper [${wrapper}]`);
-        wrapper = wrapper.value.value;
-    }
-    return {components: results, wrapper: wrapper};
+    return wrapper;
 };
 
 const isDropZoneComponent = (componentName, importDefinition) => {
-    //console.log(`Checking ${componentName} (${JSON.stringify(importDefinition)}) for extending CmsDropZoneComponent`);
-    const content = getSource(importDefinition.source);
-    return /extends\s*:\s*CmsDropZoneComponent/.test(content);
-};
-
-const getSource = (source) => {
-    source = path.resolve(path.dirname(_fileName), source);
-    if (fs.existsSync(source)) return fs.readFileSync(source);
-
-    for (let i in extensions) {
-        const ext = extensions[i];
-        if (fs.existsSync(source + ext)) return fs.readFileSync(source + ext);
-    }
-    return "";
+    //console.warn(`TODO: robust checking for CmsDropZoneComponent inheritance`);
+    return componentName === "DropZone";
 };
 
 module.exports = {

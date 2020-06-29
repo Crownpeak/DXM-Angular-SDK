@@ -46,7 +46,7 @@ const main = () => {
     }
     const tsFiles = files.getRecursive(cwd, "ts");
     for (let f in tsFiles) {
-        console.log(`Processing ${tsFiles[f]}`);
+        //console.log(`Processing ${tsFiles[f]}`);
         let result = parser.process(tsFiles[f]);
         if (result.components) {
             //console.log(`Found component definitions ${JSON.stringify(result.components)}`);

@@ -2,28 +2,22 @@ const babelParser = require("@babel/parser");
 
 let _componentName = "";
 
-const reTemplate = /<template>\s*((?:.|\r|\n)+)\s*<\/template>/i;
-const reScript = /<script>\s*((?:.|\r|\n)+)\s*<\/script>/i;
+const reTemplate = /template\s*:\s*`\s*((.|\s)*?)\s*`/;
 const reList = /^([ \t]*)<!--\s*<List(.*?)\s*type=(["'])([^"']+?)\3(.*?)>\s*-->((.|\s)*?)<!--\s*<\/List>\s*-->/im;
 const reListName = /\s+?name\s*=\s*(["'])([^"']+?)\1/i;
 const reListItemName = /\s+?itemName\s*=\s*(["'])([^"']+?)\1/i;
+const reListWrapper = /<([a-z0-9:\-]+)(.*?)\s+\*ngFor=(["'])([^"']+?)\3(.*?)>/im;
 
 const parse = (content) => {
     let match = reTemplate.exec(content);
     if (!match) return;
     let template = match[1];
 
-    match = reScript.exec(content);
-    if (!match) return;
-    
-    const script = match[1];
-
-    const ast = babelParser.parse(script, {
+    const ast = babelParser.parse(content, {
         sourceType: "module",
-        plugins: ["decorators"]
+        plugins: ["typescript", "decorators-legacy", "classProperties"]
     });
-    if (content.indexOf("class SecondaryContainer extends") > 0)
-        console.log(JSON.stringify(ast));
+    //console.log(JSON.stringify(ast));
     if (ast.errors && ast.errors.length > 0) {
         console.warn(`COMPONENT: Skipping due to errors`);
         return;
@@ -52,11 +46,11 @@ const parse = (content) => {
 
     for (let i = 0, len = bodyParts.length; i < len; i++) {
         const part = bodyParts[i];
-        if (part.type === "ExportDefaultDeclaration") {
-            const extnds = part.declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "extends");
-            let name = part.declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "name");
-            if (extnds && extnds.value.name === "CmsComponent" && name) {
-                name = name.value.value;
+        if (part.type === "ExportDefaultDeclaration" || part.type === "ExportNamedDeclaration") {
+            const extnds = part.declaration.superClass;
+            let name = part.declaration.id;
+            if (extnds && extnds.name === "CmsComponent" && name) {
+                name = name.name;
                 //console.log(`Found component ${name} extending CmsComponent`);
                 const data = processCmsComponent(content, ast, name, part.declaration, imports, dependencies);
                 if (data) {
@@ -102,8 +96,14 @@ const replaceLists = (content) => {
         if (!itemName) {
             itemName = type;
         }
+        let wrapperStart = "", wrapperEnd = "";
+        let wrapperMatch = reListWrapper.exec(match[6]);
+        if (wrapperMatch) {
+            wrapperStart = `<${wrapperMatch[1]}${wrapperMatch[2]}${wrapperMatch[5]}>\r\n${ws}    `;
+            wrapperEnd = `  </${wrapperMatch[1]}>\r\n${ws}`;
+        }
         //console.log(`Found list with name ${name}`);
-        const repl = `${ws}<cp-list name="${name}">\r\n${ws}  {${itemName}:${type}}\r\n${ws}</cp-list>`;
+        const repl = `${ws}<cp-list name="${name}">\r\n${ws}  ${wrapperStart}{${itemName}:${type}}\r\n${ws}${wrapperEnd}</cp-list>`;
         content = content.replace(match[0], repl);
     }
     return content;
@@ -137,10 +137,10 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
     const fieldRegexs = [
         { source: "{{.*?\\/\\*.*?%%name%%.*?\\*\\/.*?}}", replacement: "<!-- {%%fieldname%%:%%fieldtype%%} -->" },
         { source: "{{.*?%%name%%.*?}}", replacement: "{%%fieldname%%:%%fieldtype%%}" },
-        { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+v-html\\s*=\\s*([\"'])(%%name%%)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%fieldname%%:%%fieldtype%%}</$1>" },
+        { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+\\[innerHTML\\]\\s*=\\s*([\"'])(%%name%%)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%fieldname%%:%%fieldtype%%}</$1>" },
     ];
     const componentRegexs = [
-        { source: "<(%%name%%)([^>]*?)(>.*?<\\/\\1>|\\/>)", replacement: "{%%name%%:%%componentname%%}" }
+        { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+component\\s*=\\s*([\"'])([^\"']+)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%name%%}</$1>" }
     ];
     let result = template;
     // Longest name first to avoid substring replacements
@@ -157,22 +157,24 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
                     result = result.replace(regex, replacement);
                 }
             }
-        } else if (data[i].componentName) {
-            for (let j = 0, lenJ = componentRegexs.length; j < lenJ; j++) {
-                let regex = new RegExp(componentRegexs[j].source.replace("%%name%%", data[i].name));
-                let match = regex.exec(result);
-                let index = 0;
-                while (match) {
-                    if (dependencies.indexOf(data[i].componentName) < 0) dependencies.push(data[i].componentName);
-                    let suffix = ++index > 1 ? "_" + index : "";
-                    let replacement = componentRegexs[j].replacement.replace("%%name%%", data[i].name + suffix).replace("%%componentname%%", data[i].componentName);
-                    //console.log(`Replacing [${match[0]}] with [${replacement}]`);
-                    result = result.replace(regex, replacement);
-                    match = regex.exec(result);
-                }
-            }
         }
     }
+    let componentTypes = {};
+    for (let i = 0, len = componentRegexs.length; i < len; i++) {
+        const regex = new RegExp(componentRegexs[i].source);
+        let match = regex.exec(result);
+        while (match) {
+            const componentType = match[4];
+            const index = componentTypes[componentType] || 1;
+            const suffix = (index > 1 ? ("_" + index) : "") + ":" + componentType;
+            componentTypes[componentType] = index + 1;
+            const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
+            //console.log(`Replacing [${match[0]}] with [${replacement}]`);
+            result = result.replace(regex, replacement);
+            match = regex.exec(result);
+        }
+    }
+
     return result;
 };
 
@@ -180,43 +182,26 @@ const processCmsComponent = (content, ast, name, declaration, imports, dependenc
     _componentName = name;
     //console.log(`Processing CmsComponent ${_componentName}`);
     let results = [];
-    const data = declaration.properties.find(p => p.type === "ObjectMethod" && p.key.name === "data");
-    if (data) {
-        const props = data.body.body[0].argument.properties;
-        for (let i = 0; len = props.length, i < len; i++) {
-            const prop = props[i];
-            if (prop.value && prop.value.callee && prop.value.callee.name === "CmsField" && prop.value.arguments && prop.value.arguments.length > 1) {
-                const args = prop.value.arguments;
-                if (args[1].property && args[1].property.name) {
-                    // Items of the form CmsField("Heading", CmsFieldTypes.TEXT)
-                    //console.log(`Found property [${prop.key.name}] with field name [${args[0].value}] of type [${args[1].property.name}]`);
-                    results.push({
-                        name: prop.key.name,
-                        fieldName: args[0].value,
-                        fieldType: cmsFieldTypeToString(args[1].property.name)
-                    });
-                } else if (args[1].type === "StringLiteral" && args[1].value) {
-                    // Items of the form CmsField("Heading", "FieldType")
-                    //console.log(`Found property [${prop.key.name}] with field name [${args[0].value}] of type [${args[1].value}]`);
-                    results.push({
-                        name: prop.key.name,
-                        fieldName: args[0].value,
-                        fieldType: cmsFieldTypeToString(args[1].value)
-                    });
-                }
-            }
-        }
-    }
-    const components = declaration.properties.find(p => p.type === "ObjectProperty" && p.key.name === "components");
-    if (components) {
-        const props = components.value.properties;
-        for (let i = 0; len = props.length, i < len; i++) {
-            const prop = props[i];
-            if (prop.type === "ObjectProperty") {
-                //console.log(`Found component property [${prop.key.name}]`);
+    const items = declaration.body.body;
+    for (let i = 0; len = items.length, i < len; i++) {
+        const item = items[i];
+        if (item.value && item.value.callee && item.value.callee.name === "CmsField" && item.value.arguments && item.value.arguments.length > 1) {
+            const args = item.value.arguments;
+            if (args[1].property && args[1].property.name) {
+                // Items of the form CmsField("Heading", CmsFieldTypes.TEXT)
+                //console.log(`Found property [${item.key.name}] with field name [${args[0].value}] of type [${args[1].property.name}]`);
                 results.push({
-                    name: prop.key.name,
-                    componentName: prop.key.name
+                    name: item.key.name,
+                    fieldName: args[0].value,
+                    fieldType: cmsFieldTypeToString(args[1].property.name)
+                });
+            } else if (args[1].type === "StringLiteral" && args[1].value) {
+                // Items of the form CmsField("Heading", "FieldType")
+                //console.log(`Found property [${item.key.name}] with field name [${args[0].value}] of type [${args[1].value}]`);
+                results.push({
+                    name: item.key.name,
+                    fieldName: args[0].value,
+                    fieldType: cmsFieldTypeToString(args[1].value)
                 });
             }
         }

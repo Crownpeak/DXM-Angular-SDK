@@ -21,11 +21,11 @@ const process = (file) => {
         components = componentParser.parse(content);
     }
     if (rePage.test(content)) {
-        //console.log(`Found page in ${file}`)
+        //console.log(`Found page in ${file}`);
         pages = pageParser.parse(content, file);
     }
     if (reWrapper.test(content)) {
-        //console.log(`Found wrapper in ${file}`)
+        //console.log(`Found wrapper in ${file}`);
         const temp = wrapperParser.parse(file, content);
         wrapper = temp.wrapper;
         uploads = temp.uploads;
