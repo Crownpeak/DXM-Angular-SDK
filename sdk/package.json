@@ -16,7 +16,6 @@
     "@angular/platform-browser-dynamic": "~9.1.11",
     "@angular/router": "~9.1.11",
     "@babel/parser": "^7.9.4",
-    "crownpeak-dxm-accessapi-helper": "^1.0.3",
     "crownpeak-dxm-sdk-core": "^2.0.0",
     "dotenv": "^8.2.0",
     "rxjs": "~6.5.4",
