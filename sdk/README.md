@@ -42,4 +42,4 @@ Data Sources**
 | Version       | Date          | Changes                            |
 | ------------- | --------------|----------------------------------- |
 | 2.0.0         | 2020JUN30     | Initial release.    |
-| next          | 2020JUL28     | New 'init', 'patch' and 'scaffold' options, improved output, lots of bug fixes. |
+| 2.1.0         | 2020JUL28     | New 'init', 'patch' and 'scaffold' options, improved output, lots of bug fixes. |
