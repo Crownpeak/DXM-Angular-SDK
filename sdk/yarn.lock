@@ -2437,7 +2437,7 @@ cross-spawn@^6.0.0:
     shebang-command "^1.2.0"
     which "^1.2.9"
 
-crownpeak-dxm-accessapi-helper@^1.0.2, crownpeak-dxm-accessapi-helper@^1.0.3:
+crownpeak-dxm-accessapi-helper@^1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/crownpeak-dxm-accessapi-helper/-/crownpeak-dxm-accessapi-helper-1.0.3.tgz#26f75c6bf167b549adc41bf5a67e980e0ba909ee"
   integrity sha512-ft563zEeRxhZW4L+KaOEF7JHs+rlZ2Nzudkyw3Nx5OqFg631LwHc3rgtMCsGIdnX3jNc50gMAmjD//3FslCH6A==
