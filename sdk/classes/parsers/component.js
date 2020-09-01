@@ -134,6 +134,10 @@ const trimSharedLeadingWhitespace = (content) => {
 };
 
 const processCmsComponentTemplate = (content, name, template, data, imports, dependencies) => {
+    const scaffoldRegexs = [
+        { source: "<!--\\s*cp-scaffold\\s*(.*?)\\s*else\\s*-->\\s*(.*?)\\s*<!--\\s*\\/cp-scaffold\\s*-->", replacement: "$1"},
+        { source: "<!--\\s*cp-scaffold\\s*(.*?)\\s*\\/cp-scaffold\\s*-->", replacement: "$1"}
+    ];
     const fieldRegexs = [
         { source: "{{.*?\\/\\*.*?%%name%%.*?\\*\\/.*?}}", replacement: "<!-- {%%fieldname%%:%%fieldtype%%} -->" },
         { source: "{{.*?%%name%%.*?}}", replacement: "{%%fieldname%%:%%fieldtype%%}" },
@@ -143,6 +147,16 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
         { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+component\\s*=\\s*([\"'])([^\"']+)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%name%%}</$1>" }
     ];
     let result = template;
+    for (let j = 0, lenJ = scaffoldRegexs.length; j < lenJ; j++) {
+        let regex = new RegExp(scaffoldRegexs[j].source);
+        let match = regex.exec(result);
+        while (match) {
+            let replacement = scaffoldRegexs[j].replacement;
+            //console.log(`Replacing [${match[0]}] with [${replacement}]`);
+            result = result.replace(regex, replacement);
+            match = regex.exec(result);
+        }
+    }
     // Longest name first to avoid substring replacements
     var dataItems = data.sort((a, b) => b.name.length - a.name.length);
     for (let i = 0, len = dataItems.length; i < len; i++) {
