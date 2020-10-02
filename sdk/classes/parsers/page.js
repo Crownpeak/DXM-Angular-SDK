@@ -44,12 +44,12 @@ const parse = (content, file) => {
             if (extnds && (extnds.name === "CmsDynamicPage" || extnds.name === "CmsStaticPage") && name) {
                 name = name.name;
                 //console.log(`Found page ${name} extending ${extnds.name}`);
-                const wrapper = processCmsPage(content, ast, name, part.declaration, imports);
+                const props = processCmsPage(content, ast, name, part.declaration, imports);
                 const result = processCmsPageTemplate(content, name, template, null, imports);
                 if (result) {
                     const processedResult = utils.replaceAssets(file, finalProcessMarkup(result), cssParser);
                     uploads = uploads.concat(processedResult.uploads);
-                    results.push({name: name, content: processedResult.content, wrapper: wrapper});
+                    results.push({name: name, content: processedResult.content, wrapper: props.wrapper, useTmf: props.useTmf === true});
                 }
             }
         }
@@ -123,18 +123,52 @@ const processCmsPageTemplate = (content, name, template, components, imports) =>
 const processCmsPage = (content, ast, name, declaration, imports) => {
     _pageName = name;
     //console.log(`Processing CmsPage ${_pageName}`);
-    let wrapper = null;
     const ctor = declaration.body.body.find(p => p.type === "ClassMethod" && p.key && p.key.name === "constructor");
     if (ctor) {
-        const wrapperBody = ctor.body.body.find(p => p.type === "ExpressionStatement" 
-            && p.expression.type && p.expression.type === "AssignmentExpression" 
-            && p.expression.left && p.expression.left.property && p.expression.left.property.name === "cmsWrapper");
-        if (wrapperBody) {
-            wrapper = wrapperBody.expression.right.value;
-            //console.log(`Found reference to wrapper [${wrapper}]`);
+        return processCmsConstructor(content, declaration, ctor, imports);
+    }
+    return {};
+};
+
+const processCmsConstructor = (content, page, ctor, imports) => {
+    return { 
+        useTmf: getConstructorAssignedValue(ctor, "cmsUseTmf", false),
+        wrapper: getConstructorAssignedValue(ctor, "cmsWrapper", undefined)
+    };
+};
+
+const getConstructorAssignedValue = (ctor, name, defaultValue) => {
+    const parts = ctor.body.body;
+    for (let i = 0, len = parts.length; i < len; i++) {
+        const part = parts[i];
+        if (part.type === "ExpressionStatement"
+            && part.expression && part.expression.type === "AssignmentExpression"
+            && part.expression.operator === "=") {
+            if (part.expression.left && part.expression.left.type === "Identifier" 
+                && part.expression.left.name === name
+                && part.expression.right) {
+                // Items of the form
+                // name = value;
+                return part.expression.right.value;
+            } else if (part.expression.left && part.expression.left.type === "MemberExpression"
+                && part.expression.left.object && part.expression.left.object.type === "ThisExpression"
+                && part.expression.left.property && part.expression.left.property.name === name
+                && part.expression.right) {
+                // Items of the form
+                // this.name = value;
+                return part.expression.right.value;
+            } else if (part.expression.left && part.expression.left.type === "MemberExpression"
+                && part.expression.left.object && part.expression.left.object.type === "ThisExpression"
+                && part.expression.left.property && part.expression.left.property.type === "StringLiteral"
+                && part.expression.left.property.value === name
+                && part.expression.right) {
+                // Items of the form
+                // this["name"] = value;
+                return part.expression.right.value;
+            }
         }
     }
-    return wrapper;
+    return defaultValue;
 };
 
 const isDropZoneComponent = (componentName, importDefinition) => {
