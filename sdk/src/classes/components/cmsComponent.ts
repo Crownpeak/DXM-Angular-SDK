@@ -5,6 +5,7 @@ import IComponentProps from "./IComponentProps";
 export default class CmsComponent extends CmsCore implements IComponentProps {
     [key: string]: any;
     data?:any;
+    cmsFolder?: string = "";
 
     constructor(props?: any) {
         super(props);

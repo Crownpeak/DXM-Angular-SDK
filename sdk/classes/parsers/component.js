@@ -54,6 +54,7 @@ const parse = (content, file) => {
             let name = part.declaration.id;
             if (extnds && extnds.name === "CmsComponent" && name) {
                 name = name.name;
+                const cmsProps = processCmsClassProperties(content, name, part.declaration, imports);
                 //console.log(`Found component ${name} extending CmsComponent`);
                 const data = processCmsComponent(content, ast, name, part.declaration, imports, dependencies);
                 if (data) {
@@ -61,7 +62,7 @@ const parse = (content, file) => {
                     if (result) {
                         const processedResult = utils.replaceAssets(file, finalProcessMarkup(result), cssParser, true);
                         uploads = uploads.concat(processedResult.uploads);
-                        results.push({name: name, content: processedResult.content, dependencies: dependencies});
+                        results.push({name: name, content: processedResult.content, folder: cmsProps.folder, dependencies: dependencies});
                     }
                 }
             }
@@ -253,6 +254,27 @@ const processCmsComponent = (content, ast, name, declaration, imports, dependenc
         }
     }
     return results;
+};
+
+const processCmsClassProperties = (content, page, declaration, imports) => {
+    return { 
+        folder: getClassPropertyValue(declaration, "cmsFolder", "")
+    };
+};
+
+const getClassPropertyValue = (declaration, name, defaultValue) => {
+    const parts = declaration.body.body;
+    for (let i = 0, len = parts.length; i < len; i++) {
+        const part = parts[i];
+        if (part.type === "ClassProperty"
+            && part.key && part.key.type === "Identifier" && part.key.name === name
+            && part.value) {
+            // Items of the form
+            // name:type = value;
+            return part.value.value;
+        }
+    }
+    return defaultValue;
 };
 
 const cmsFieldTypeToString = (cmsFieldType) => {
