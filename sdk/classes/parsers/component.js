@@ -144,9 +144,11 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
         { source: "<!--\\s*cp-scaffold\\s*((?:.|\\r|\\n)*?)\\s*\\/cp-scaffold\\s*-->", replacement: "$1"}
     ];
     const fieldRegexs = [
-        { source: "{{.*?\\/\\*.*?%%name%%.*?\\*\\/.*?}}", replacement: "<!-- {%%fieldname%%:%%fieldtype%%} -->" },
-        { source: "{{.*?%%name%%.*?}}", replacement: "{%%fieldname%%:%%fieldtype%%}" },
         { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+\\[innerHTML\\]\\s*=\\s*([\"'])(%%name%%)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%fieldname%%:%%fieldtype%%}</$1>" },
+        { source: "(\\s+\\[([^\\]]+)\\]\\s*=\\s*)([\"'])(%%name%%)\\3", replacement: " $2=$3{%%fieldname%%:%%fieldtype%%}$3" },
+        { source: "{{.*?\\/\\*.*?%%name%%.*?\\*\\/.*?}}", replacement: "<!-- {%%fieldname%%:%%fieldtype%%} -->" },
+        { source: "=\\s*{{[^{}]*?%%name%%[^{}}]*?}}", replacement: "=\"{%%fieldname%%:%%fieldtype%%}\"" },
+        { source: "{{[^{}]*?%%name%%[^{}}]*?}}", replacement: "{%%fieldname%%:%%fieldtype%%}" }
     ];
     const componentRegexs = [
         { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+component\\s*=\\s*([\"'])([^\"']+)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%name%%}</$1>" }
@@ -172,10 +174,11 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
             for (let j = 0, lenJ = fieldRegexs.length; j < lenJ; j++) {
                 let regex = new RegExp(fieldRegexs[j].source.replace("%%name%%", data[i].name));
                 let match = regex.exec(result);
-                if (match) {
+                while (match) {
                     const replacement = fieldRegexs[j].replacement.replace("%%fieldname%%", data[i].fieldName).replace("%%fieldtype%%", data[i].fieldType + indexedField);
                     //console.log(`Replacing [${match[0]}] with [${replacement}]`);
                     result = result.replace(regex, replacement);
+                    match = regex.exec(result);
                 }
             }
         }
