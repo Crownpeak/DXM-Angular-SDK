@@ -1,6 +1,6 @@
 {
   "name": "crownpeak-dxm-angular-sdk",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Crownpeak Digital Experience Management (DXM)Software Development Kit (SDK) for Angular has been constructed to assist the Single Page App developer in developing client-side applications that leverage DXM for content management purposes.",
   "repository": "https://github.com/Crownpeak/DXM-Angular-SDK",
   "main": "dist/entry.js",
@@ -16,7 +16,7 @@
     "@angular/platform-browser-dynamic": "~9.1.11",
     "@angular/router": "~9.1.11",
     "@babel/parser": "^7.9.4",
-    "crownpeak-dxm-sdk-core": "^2.3.0",
+    "crownpeak-dxm-sdk-core": "^2.4.0",
     "dotenv": "^8.2.0",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
