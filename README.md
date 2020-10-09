@@ -80,6 +80,10 @@ export class HomePage extends CmsStaticPage {
     {
         super(null);
         this.cmsAssetId = 266812;
+        this.cmsWrapper = "";           //insert Wrapper Name from data-cms-wrapper-name in HTML, or don't include property to accept defaults.
+        this.cmsUseTmf = false;         //set to true to create templates that use the Translation Model Framework.
+        this.cmsSuppressModel = false;  //set to true to suppress model and content folder creation when scaffolding.
+        this.cmsSuppressFolder = false; //set to true to suppress content folder creation when scaffolding.
     }
 
     ngOnInit()
@@ -117,6 +121,10 @@ export class HomePage extends CmsDynamicPage {
     {
         super(null);
         this.cmsAssetId = 266812;
+        this.cmsWrapper = "";           //insert Wrapper Name from data-cms-wrapper-name in HTML, or don't include property to accept defaults.
+        this.cmsUseTmf = false;         //set to true to create templates that use the Translation Model Framework.
+        this.cmsSuppressModel = false;  //set to true to suppress model and content folder creation when scaffolding.
+        this.cmsSuppressFolder = false; //set to true to suppress content folder creation when scaffolding.
     }
 
     ngOnInit()
@@ -148,6 +156,7 @@ export class HeroContainer extends CmsComponent {
     heading: CmsField = new CmsField("Heading", CmsFieldTypes.TEXT, null);
     description: CmsField = new CmsField("Description", CmsFieldTypes.WYSIWYG, null);
     button_text: CmsField = new CmsField("Button_Text", CmsFieldTypes.TEXT, null);
+    cmsFolder: string = ""; //set the subfolder in which the component will be created when scaffolding.
 }
 ```
 
