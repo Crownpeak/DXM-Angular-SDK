@@ -45,7 +45,7 @@ const parse = (content, file) => {
     }
 
     // Parse out any special lists
-    template = replaceLists(template);
+    template = replaceLists(template, dependencies);
 
     for (let i = 0, len = bodyParts.length; i < len; i++) {
         const part = bodyParts[i];
@@ -80,7 +80,7 @@ const finalProcessMarkup = (content) => {
     return trimSharedLeadingWhitespace(content);
 };
 
-const replaceLists = (content) => {
+const replaceLists = (content, dependencies) => {
     let match;
     while (match = reList.exec(content)) {
         let attributes = " " + match[2] + " " + match[5];
@@ -111,6 +111,7 @@ const replaceLists = (content) => {
         //console.log(`Found list with name ${name}`);
         const repl = `${ws}<cp-list name="${name}">\r\n${ws}  ${wrapperStart}{${itemName}:${type}}\r\n${ws}${wrapperEnd}</cp-list>`;
         content = content.replace(match[0], repl);
+        addDependency(type, dependencies);
     }
     return content;
 };
@@ -179,6 +180,7 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
                     const replacement = fieldRegexs[j].replacement.replace("%%fieldname%%", data[i].fieldName).replace("%%fieldtype%%", data[i].fieldType + indexedField);
                     //console.log(`Replacing [${match[0]}] with [${replacement}]`);
                     result = result.replace(regex, replacement);
+                    addDependency(data[i].fieldType, dependencies);
                     match = regex.exec(result);
                 }
             }
@@ -196,6 +198,7 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
             const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
             //console.log(`Replacing [${match[0]}] with [${replacement}]`);
             result = result.replace(regex, replacement);
+            addDependency(componentType, dependencies);
             match = regex.exec(result);
         }
     }
@@ -275,6 +278,11 @@ const getClassPropertyValue = (declaration, name, defaultValue) => {
         }
     }
     return defaultValue;
+};
+
+const addDependency = (type, dependencies) => {
+    if (utils.isCoreComponent(type)) return;
+    if (dependencies.indexOf(type) < 0) dependencies.push(type);
 };
 
 const cmsFieldTypeToString = (cmsFieldType) => {
