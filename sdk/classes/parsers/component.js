@@ -62,7 +62,7 @@ const parse = (content, file) => {
                     if (result) {
                         const processedResult = utils.replaceAssets(file, finalProcessMarkup(result), cssParser, true);
                         uploads = uploads.concat(processedResult.uploads);
-                        results.push({name: name, content: processedResult.content, folder: cmsProps.folder, dependencies: dependencies});
+                        results.push({name: name, content: processedResult.content, folder: cmsProps.folder, zones: cmsProps.zones, dependencies: dependencies});
                     }
                 }
             }
@@ -261,7 +261,8 @@ const processCmsComponent = (content, ast, name, declaration, imports, dependenc
 
 const processCmsClassProperties = (content, page, declaration, imports) => {
     return { 
-        folder: getClassPropertyValue(declaration, "cmsFolder", "")
+        folder: getClassPropertyValue(declaration, "cmsFolder", ""),
+        zones: getClassPropertyValue(declaration, "cmsZones", [])
     };
 };
 
@@ -272,9 +273,15 @@ const getClassPropertyValue = (declaration, name, defaultValue) => {
         if (part.type === "ClassProperty"
             && part.key && part.key.type === "Identifier" && part.key.name === name
             && part.value) {
-            // Items of the form
-            // name:type = value;
-            return part.value.value;
+            if (part.value.type === "ArrayExpression") {
+                // Items of the form
+                // name:type = [value];
+                return part.value.elements.map(e => e.value);
+            } else {
+                // Items of the form
+                // name:type = value;
+                return part.value.value;
+            }
         }
     }
     return defaultValue;

@@ -6,7 +6,8 @@ export default class CmsComponent extends CmsCore implements IComponentProps {
     [key: string]: any;
     data?:any;
     cmsFolder?: string = "";
-
+    cmsZones?: string[] = [];
+    
     constructor(props?: any) {
         super(props);
     }
