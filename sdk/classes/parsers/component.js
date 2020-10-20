@@ -141,9 +141,12 @@ const trimSharedLeadingWhitespace = (content) => {
 };
 
 const processCmsComponentTemplate = (content, name, template, data, imports, dependencies) => {
-    const scaffoldRegexs = [
-        { source: "<!--\\s*cp-scaffold\\s*((?:.|\\r|\\n)*?)\\s*else\\s*-->\\s*((?:.|\\r|\\n)*?)\\s*<!--\\s*\\/cp-scaffold\\s*-->", replacement: "$1" },
+    const scaffoldPreRegexs = [
+        { source: "<!--\\s*cp-scaffold\\s*((?:.|\\r|\\n)*?)\\s*else\\s*-->\\s*((?:.|\\r|\\n)*?)\\s*<!--\\s*\\/cp-scaffold\\s*-->", replacement: "<!-- cp-pre-scaffold $1 /cp-pre-scaffold -->" },
         { source: "<!--\\s*cp-scaffold\\s*((?:.|\\r|\\n)*?)\\s*\\/cp-scaffold\\s*-->", replacement: "$1"}
+    ];
+    const scaffoldPostRegexs = [
+        { source: "<!--\\s*cp-pre-scaffold\\s*((?:.|\\r|\\n)*?)\\s*\\/cp-pre-scaffold\\s*-->", replacement: "$1"}
     ];
     const fieldRegexs = [
         { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+\\[innerHTML\\]\\s*=\\s*([\"'])(%%name%%)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%fieldname%%:%%fieldtype%%}</$1>" },
@@ -156,11 +159,11 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
         { source: "<([a-z0-9:-]*)(\\s*.*?)\\s+component\\s*=\\s*([\"'])([^\"']+)\\3([^>]*?)(><\\/\\1>|\\/>)", replacement: "<$1$2$5>{%%name%%}</$1>" }
     ];
     let result = template;
-    for (let j = 0, lenJ = scaffoldRegexs.length; j < lenJ; j++) {
-        let regex = new RegExp(scaffoldRegexs[j].source);
+    for (let j = 0, lenJ = scaffoldPreRegexs.length; j < lenJ; j++) {
+        let regex = new RegExp(scaffoldPreRegexs[j].source);
         let match = regex.exec(result);
         while (match) {
-            let replacement = scaffoldRegexs[j].replacement;
+            let replacement = scaffoldPreRegexs[j].replacement;
             //console.log(`Replacing [${match[0]}] with [${replacement}]`);
             result = result.replace(regex, replacement);
             match = regex.exec(result);
@@ -199,6 +202,16 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
             //console.log(`Replacing [${match[0]}] with [${replacement}]`);
             result = result.replace(regex, replacement);
             addDependency(componentType, dependencies);
+            match = regex.exec(result);
+        }
+    }
+    for (let j = 0, lenJ = scaffoldPostRegexs.length; j < lenJ; j++) {
+        let regex = new RegExp(scaffoldPostRegexs[j].source);
+        let match = regex.exec(result);
+        while (match) {
+            let replacement = scaffoldPostRegexs[j].replacement;
+            //console.log(`Replacing [${match[0]}] with [${replacement}]`);
+            result = result.replace(regex, replacement);
             match = regex.exec(result);
         }
     }
