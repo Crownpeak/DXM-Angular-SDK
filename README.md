@@ -102,8 +102,8 @@ import { CmsStaticPage, CmsDataCache } from 'crownpeak-dxm-angular-sdk';
 @Component({
     selector: '[component=HomePage]',
     template: `
-            <div class="jumbotron" component="HeroContainer"></div>
-            <div class="container">
+            <div *ngIf="isLoaded" class="jumbotron" component="HeroContainer"></div>
+            <div *ngIf="isLoaded" class="container">
                 <div class="row">
                     <div class="col-md-4" component="SecondaryContainer"></div>
                     <div class="col-md-4" component="SecondaryContainer"></div>

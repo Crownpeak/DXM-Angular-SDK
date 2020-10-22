@@ -6,9 +6,11 @@ export default class CmsPage extends CmsCore {
     cmsUseTmf: boolean = false;
     cmsSuppressFolder: boolean = false;
     cmsSuppressModel: boolean = false;
+    isLoaded: boolean = false;
 
     ngOnInit(): void {
-        this.cmsDataProvider.getSingleAsset(this.cmsAssetId);
+        const that = this;
+        this.cmsDataProvider.getSingleAsset(this.cmsAssetId).then(() => that.isLoaded = true );
         CmsDataCache.cmsAssetId = this.cmsAssetId;
     }
 }
