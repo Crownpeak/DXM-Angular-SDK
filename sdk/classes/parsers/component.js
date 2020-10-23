@@ -1,19 +1,21 @@
+const fs = require("fs");
+const path = require('path');
 const babelParser = require("@babel/parser");
 const cssParser = require("./css");
 const utils = require("crownpeak-dxm-sdk-core/lib/crownpeak/utils");
 
 let _componentName = "";
+let _componentCache = {};
 
-const reTemplate = /template\s*:\s*`\s*((.|\s)*?)\s*`/;
 const reList = /^([ \t]*)<!--\s*<List(.*?)\s*type=(["'])([^"']+?)\3(.*?)>\s*-->((.|\s)*?)<!--\s*<\/List>\s*-->/im;
 const reListName = /\s+?name\s*=\s*(["'])([^"']+?)\1/i;
 const reListItemName = /\s+?itemName\s*=\s*(["'])([^"']+?)\1/i;
 const reListWrapper = /<([a-z0-9:\-]+)(.*?)\s+\*ngFor=(["'])([^"']+?)\3(.*?)>/im;
 
 const parse = (content, file) => {
-    let match = reTemplate.exec(content);
-    if (!match) return;
-    let template = match[1];
+    const {templates, scripts, styles} = getParts(file, content);
+
+    let template = templates.join("\n");
 
     const ast = babelParser.parse(content, {
         sourceType: "module",
@@ -126,7 +128,7 @@ const trimSharedLeadingWhitespace = (content) => {
         let line = lines[i];
         if (i == 0 || onlyWhitespace.test(line)) continue;
         let match = line.match(leadingWhitespace);
-        if (match && match[0].length) maxLeader = Math.min(maxLeader, match[0].length);
+        if (match) maxLeader = Math.min(maxLeader, match[0].length);
     }
     if (maxLeader > 0) {
         const leadingWhitespaceReplacer = new RegExp(`^\\s{${maxLeader}}`);
@@ -324,6 +326,78 @@ const cmsIndexedFieldToString = (cmsIndexedField) => {
     return "Indexed" + cmsIndexedField;
 };
 
+const getTemplates = (file, content) => {
+    const reTemplate = /template\s*:\s*([`"'])\s*((?:.|\s)*?)\s*\1/;
+    const reTemplateUrl = /templateUrl\s*:\s*(["'])([^"']*?)\1/;
+
+    let match = reTemplate.exec(content);
+    if (match && match.length > 1) return [match[2]];
+
+    match = reTemplateUrl.exec(content);
+    if (match && match.length > 1) {
+        if (match[2].indexOf("http") < 0 && match[2].indexOf("//") !== 0) {
+            const filepath = path.resolve(path.dirname(file), match[2]);
+            if (fs.existsSync(filepath) && fs.statSync(filepath).isFile()) return [fs.readFileSync(filepath)];
+        }
+        return [match[2]];
+    }
+
+    return [];
+};
+
+const getScripts = (file, content) => {
+    return [content];
+};
+
+const getStyles = (file, content) => { 
+    const reStyleUrls = /styleUrls\s*:\s*\[\s*(((["'`])(?:[^"'`\\]|\\.)*?\3(?:\s*,\s*)?)+)\s*\]/;
+    const reStyles = /styles\s*:\s*\[\s*(((["'`])(?:[^"'`\\]|\\.)*?\3(?:\s*,\s*)?)+)\s*\]/;
+    const reIndividual = /(["'`])((?:[^"'`\\]|\\.)*?)\1/g
+
+    let results = [];
+    let match = reStyles.exec(content);
+    if (match) {
+        let itemMatch;
+        while (itemMatch = reIndividual.exec(match[0])) {
+            results.push(itemMatch[2].replace(/\\'/g, "'").replace(/\\`/g, "`").replace(/\\"/g, "\""));
+        }
+    }
+    match = reStyleUrls.exec(content);
+    if (match) {
+        let itemMatch;
+        while (itemMatch = reIndividual.exec(match[0])) {
+            if (itemMatch[2].indexOf("http") < 0 && itemMatch[2].indexOf("//") !== 0) {
+                const filepath = path.resolve(path.dirname(file), itemMatch[2]);
+                if (fs.existsSync(filepath) && fs.statSync(filepath).isFile()) results.push(fs.readFileSync(filepath));
+            }
+        }
+    }
+
+    return results;
+};
+
+const getParts = (file, content) => {
+    let result = _componentCache[file];
+    if (!result) {
+        result = { 
+            templates: getTemplates(file, content),
+            scripts: getScripts(file, content),
+            styles: getStyles(file, content)
+        };
+        _componentCache[file] = result;
+    }
+    return result;
+};
+
+const isCmsComponent = (file, content) => {
+    const reComponent = new RegExp("class\\s+.*?\\s+extends\\s+CmsComponent");
+
+    //console.log(`Checking if ${file} is a CMS component`);
+    const { templates, scripts, styles } = getParts(file, content);
+    return scripts.filter(s => reComponent.exec(s)).length > 0;
+};
+
 module.exports = {
-    parse: parse
+    parse: parse,
+    isCmsComponent: isCmsComponent
 };
