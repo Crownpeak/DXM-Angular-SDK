@@ -11,6 +11,7 @@ const reList = /^([ \t]*)<!--\s*<List(.*?)\s*type=(["'])([^"']+?)\3(.*?)>\s*-->(
 const reListName = /\s+?name\s*=\s*(["'])([^"']+?)\1/i;
 const reListItemName = /\s+?itemName\s*=\s*(["'])([^"']+?)\1/i;
 const reListWrapper = /<([a-z0-9:\-]+)(.*?)\s+\*ngFor=(["'])([^"']+?)\3(.*?)>/im;
+const reExportDefinition = /export\s+(?:const|class|{)\s+([A-Za-z0-9]+)\s+/g;
 
 const parse = (content, file) => {
     const {templates, scripts, styles} = getParts(file, content);
@@ -199,13 +200,17 @@ const processCmsComponentTemplate = (content, name, template, data, imports, dep
         let match = regex.exec(result);
         while (match) {
             const componentType = match[4];
-            const index = componentTypes[componentType] || 1;
-            const suffix = (index > 1 ? ("_" + index) : "") + ":" + componentType;
-            componentTypes[componentType] = index + 1;
-            const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
-            //console.log(`Replacing [${match[0]}] with [${replacement}]`);
-            result = result.replace(regex, replacement);
-            addDependency(componentType, dependencies);
+            const sourceFiles = _componentSourceCache.filter(c => c.isCmsCompoment && c.exports.indexOf(componentType) >= 0);
+            //console.log(`Found ${sourceFiles.length} of ${_componentSourceCache.length} files exporting ${componentType}`);
+            if (sourceFiles.length > 0) {
+                const index = componentTypes[componentType] || 1;
+                const suffix = (index > 1 ? ("_" + index) : "") + ":" + componentType;
+                componentTypes[componentType] = index + 1;
+                const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
+                //console.log(`Replacing [${match[0]}] with [${replacement}]`);
+                result = result.replace(regex, replacement);
+                addDependency(componentType, dependencies);
+            } else break;
             match = regex.exec(result);
         }
     }
@@ -391,6 +396,37 @@ const getParts = (file, content) => {
     return result;
 };
 
+const readSourceFiles = (folder = "") => {
+    const excludes = ["node_modules"];
+    // NB: This is not foolproof, but the best I can do without working on the application directly
+    if (!folder) folder = process.env.INIT_CWD || path.resolve('.');
+
+    //console.log(`Looking in ${folder}`);
+    let results = [];
+    const entries = fs.readdirSync(folder, {withFileTypes: true});
+    entries.filter(e => e.isFile()).forEach(file => {
+        if (file.name.length > 3 && file.name.slice(-3) === ".ts") {
+            const filePath = `${folder}${path.sep}${file.name}`;
+            //console.log(`Processing ${filePath}`);
+            const content = fs.readFileSync(filePath).toString();
+            let match = reExportDefinition.exec(content);
+            if (match) {
+                let exp = [match[1]];
+                while (match = reExportDefinition.exec(content)) exp.push(match[1]);
+                results.push({name: file.name, path: filePath, content: content, exports: exp, isCmsCompoment: isCmsComponent(filePath, content)});
+                //console.log(`Added result ${JSON.stringify(results[results.length - 1])}`);
+            }
+        }
+    });
+    entries.filter(e => e.isDirectory()).forEach(dir => {
+        if (excludes.indexOf(dir.name) < 0) {
+            results = results.concat(readSourceFiles(`${folder}${path.sep}${dir.name}`))
+        }
+    });
+
+    return results;
+}
+
 const isCmsComponent = (file, content) => {
     const reComponent = new RegExp("class\\s+.*?\\s+extends\\s+CmsComponent");
 
@@ -399,7 +435,10 @@ const isCmsComponent = (file, content) => {
     return scripts.filter(s => reComponent.exec(s)).length > 0;
 };
 
+const _componentSourceCache = readSourceFiles();
+
 module.exports = {
     parse: parse,
-    isCmsComponent: isCmsComponent
+    isCmsComponent: isCmsComponent,
+    readSourceFiles: readSourceFiles
 };

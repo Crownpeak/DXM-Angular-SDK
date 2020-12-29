@@ -1,8 +1,10 @@
 const babelParser = require("@babel/parser");
 const cssParser = require("./css");
 const utils = require("crownpeak-dxm-sdk-core/lib/crownpeak/utils");
+const component = require("./component");
 
 let _fileName = "";
+const _componentSourceCache = component.readSourceFiles();
 
 const reTemplate = /template\s*:\s*`\s*((.|\s)*?)\s*`/;
 
@@ -126,12 +128,16 @@ const processCmsPageTemplate = (content, name, template, components, imports) =>
                 const replacement = "<DropZone$2$5></DropZone>";
                 result = result.replace(regex, replacement);
             } else {
-                const index = componentTypes[componentType] || 1;
-                const suffix = index > 1 ? "_" + index + ":" + componentType : "";
-                componentTypes[componentType] = index + 1;
-                const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
-                //console.log(`Replacing [${match[0]}] with [${replacement}]`);
-                result = result.replace(regex, replacement);
+                const sourceFiles = _componentSourceCache.filter(c => c.isCmsCompoment && c.exports.indexOf(componentType) >= 0);
+                //console.log(`Found ${sourceFiles.length} of ${_componentSourceCache.length} files exporting ${componentType}`);
+                if (sourceFiles.length > 0) {
+                    const index = componentTypes[componentType] || 1;
+                    const suffix = index > 1 ? "_" + index + ":" + componentType : "";
+                    componentTypes[componentType] = index + 1;
+                    const replacement = componentRegexs[i].replacement.replace("%%name%%", componentType + suffix);
+                    //console.log(`Replacing [${match[0]}] with [${replacement}]`);
+                    result = result.replace(regex, replacement);
+                } else break;
             }
             match = regex.exec(result);
         }
