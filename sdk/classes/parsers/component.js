@@ -79,6 +79,8 @@ const finalProcessMarkup = (content) => {
     while (replacer.test(content)) {
         content = content.replace(replacer, "$1");
     }
+    // Replacements from .cpscaffold.json file
+    content = utils.replaceMarkup(content);
     return trimSharedLeadingWhitespace(content);
 };
 
