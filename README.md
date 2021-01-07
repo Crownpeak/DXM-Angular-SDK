@@ -235,7 +235,7 @@ export class SecondaryList extends CmsComponent {
 ```
 
 ### More Complex Replacements
-If your application code is too complex for the parser to be able to extract your fields, it is possible to provide your own markup for the Component Library to use instead of your component and page code:
+If your application code is too complex for the parser to be able to extract your fields, it is possible to provide your own markup for the Component Library to use instead of your component, page and wrapper code:
 ```
 <!-- cp-scaffold 
 <h2>{Heading:Text}</h2>
