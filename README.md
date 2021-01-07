@@ -92,6 +92,7 @@ export class HomePage extends CmsStaticPage {
         this.cmsAssetId = 266812;
         this.cmsWrapper = "";           //insert Wrapper Name from data-cms-wrapper-name in HTML, or don't include property to accept defaults.
         this.cmsUseTmf = false;         //set to true to create templates that use the Translation Model Framework.
+        this.cmsUseMetadata = false;    //set to true to create templates that include the standard MetaData component.
         this.cmsSuppressModel = false;  //set to true to suppress model and content folder creation when scaffolding.
         this.cmsSuppressFolder = false; //set to true to suppress content folder creation when scaffolding.
     }
@@ -133,6 +134,7 @@ export class HomePage extends CmsDynamicPage {
         this.cmsAssetId = 266812;
         this.cmsWrapper = "";           //insert Wrapper Name from data-cms-wrapper-name in HTML, or don't include property to accept defaults.
         this.cmsUseTmf = false;         //set to true to create templates that use the Translation Model Framework.
+        this.cmsUseMetadata = false;    //set to true to create templates that include the standard MetaData component.
         this.cmsSuppressModel = false;  //set to true to suppress model and content folder creation when scaffolding.
         this.cmsSuppressFolder = false; //set to true to suppress content folder creation when scaffolding.
     }
@@ -311,13 +313,14 @@ If an invalid value for the specific data type is sent to Search G2, the entire 
 There are a number of options that can be specified on the constructor of an item that extends CmsPage.
 These are set as properties on the extending class. For example:
 ```
-this.useTmf = true;
+this.cmsUseTmf = true;
 ```
 | Property       | Description |
 | -------------- | ----------- |
-| useTmf         | If set, the resulting template will use the Translation Model Framework (TMF). Defaults to false. |
-| suppressModel  | If set, no model will be created for the resulting template. Defaults to false. |
-| suppressFolder | If set (or if suppressModel is set), no content folder will be created for the resulting model. Defaults to false. |
+| cmsUseTmf      | If set, the resulting template will use the Translation Model Framework (TMF). Defaults to false. |
+| cmsUseMetadata | If set, the resulting template will include the standard MetaData component. Defaults to false. |
+| cmsSuppressModel  | If set, no model will be created for the resulting template. Defaults to false. |
+| cmsSuppressFolder | If set (or if cmsSuppressModel is set), no content folder will be created for the resulting model. Defaults to false. |
 
 ---
 

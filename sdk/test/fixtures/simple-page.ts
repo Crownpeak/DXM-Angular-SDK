@@ -19,5 +19,6 @@ export class SimplePage extends CmsStaticPage {
         this.cmsSuppressModel = true;
         this.cmsWrapper = "SimpleWrapper";
         this.cmsUseTmf = true;
+        this.cmsUseMetadata = true;
     }
 }

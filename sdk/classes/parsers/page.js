@@ -51,7 +51,7 @@ const parse = (content, file) => {
                 if (result) {
                     const processedResult = utils.replaceAssets(file, finalProcessMarkup(result), cssParser);
                     uploads = uploads.concat(processedResult.uploads);
-                    results.push({name: name, content: processedResult.content, wrapper: props.wrapper, useTmf: props.useTmf === true, suppressFolder: props.suppressFolder === true, suppressModel: props.suppressModel === true});
+                    results.push({name: name, content: processedResult.content, wrapper: props.wrapper, useTmf: props.useTmf === true, useMetadata: props.useMetadata === true, suppressFolder: props.suppressFolder === true, suppressModel: props.suppressModel === true});
                 }
             }
         }
@@ -171,6 +171,7 @@ const processCmsConstructor = (content, page, ctor, imports) => {
         suppressFolder: getConstructorAssignedValue(ctor, "cmsSuppressFolder", false),
         suppressModel: getConstructorAssignedValue(ctor, "cmsSuppressModel", false),
         useTmf: getConstructorAssignedValue(ctor, "cmsUseTmf", false),
+        useMetadata: getConstructorAssignedValue(ctor, "cmsUseMetadata", false),
         wrapper: getConstructorAssignedValue(ctor, "cmsWrapper", undefined)
     };
 };
