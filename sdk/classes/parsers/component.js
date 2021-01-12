@@ -65,7 +65,7 @@ const parse = (content, file) => {
                     if (result) {
                         const processedResult = utils.replaceAssets(file, finalProcessMarkup(result), cssParser, true);
                         uploads = uploads.concat(processedResult.uploads);
-                        results.push({name: name, content: processedResult.content, folder: cmsProps.folder, zones: cmsProps.zones, dependencies: dependencies});
+                        results.push({name: name, content: processedResult.content, folder: cmsProps.folder, zones: cmsProps.zones, disableDragDrop: cmsProps.disableDragDrop, dependencies: dependencies});
                     }
                 }
             }
@@ -284,7 +284,8 @@ const processCmsComponent = (content, ast, name, declaration, imports, dependenc
 const processCmsClassProperties = (content, page, declaration, imports) => {
     return { 
         folder: getClassPropertyValue(declaration, "cmsFolder", ""),
-        zones: getClassPropertyValue(declaration, "cmsZones", [])
+        zones: getClassPropertyValue(declaration, "cmsZones", []),
+        disableDragDrop: getClassPropertyValue(declaration, "cmsDisableDragDrop", undefined)
     };
 };
 

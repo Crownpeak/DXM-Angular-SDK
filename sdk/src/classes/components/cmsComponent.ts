@@ -7,6 +7,7 @@ export default class CmsComponent extends CmsCore implements IComponentProps {
     data?:any;
     cmsFolder?: string = "";
     cmsZones?: string[] = [];
+    cmsDisableDragDrop?: boolean = false;
     
     constructor(props?: any) {
         super(props);

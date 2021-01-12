@@ -170,6 +170,7 @@ export class HeroContainer extends CmsComponent {
     button_text: CmsField = new CmsField("Button_Text", CmsFieldTypes.TEXT, null);
     cmsFolder: string = ""; //set the subfolder in which the component will be created when scaffolding.
     cmsZones: string[] = []; //set the zones into which the component is permitted to be dropped.
+    cmsDisableDragDrop: boolean = false; // set to true to hide this component from drag and drop.
 }
 ```
 
