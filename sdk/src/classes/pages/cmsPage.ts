@@ -11,10 +11,12 @@ export default class CmsPage extends CmsCore {
     cmsLoadDataTimeout?: number;
     cmsDataLoaded?: (data: object, assetId: number) => object | void;
     cmsDataError?: (exception: any, assetId: number) => void;
+    cmsBeforeLoadingData?: (options: XMLHttpRequest | RequestInit) => void;
 
     ngOnInit(): void {
         const that = this;
         let isError = false;
+        this.cmsDataProvider.setPreLoad(this.cmsBeforeLoadingData);
         this.cmsDataProvider.getSingleAsset(this.cmsAssetId, this.cmsLoadDataTimeout).catch((ex) => {
             isError = true;
             if (that.cmsDataError) that.cmsDataError(ex, that.cmsAssetId);
