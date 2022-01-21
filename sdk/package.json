@@ -1,13 +1,21 @@
 {
   "name": "crownpeak-dxm-angular-sdk",
-  "version": "3.5.1",
+  "version": "4.0.0",
   "description": "Crownpeak Digital Experience Management (DXM)Software Development Kit (SDK) for Angular has been constructed to assist the Single Page App developer in developing client-side applications that leverage DXM for content management purposes.",
   "repository": "https://github.com/Crownpeak/DXM-Angular-SDK",
   "main": "dist/entry.js",
   "author": "Crownpeak Technology, inc.",
   "license": "MIT",
   "dependencies": {
+    "crownpeak-dxm-sdk-core": "^3.5.1"
+  },
+  "bin": {
+    "crownpeak": "./classes/crownpeak/cmsify.js"
+  },
+  "devDependencies": {
     "@angular/animations": "~9.1.11",
+    "@angular/cli": "~9.1.8",
+    "@angular/compiler-cli": "~9.1.11",
     "@angular/common": "~9.1.11",
     "@angular/compiler": "~9.1.11",
     "@angular/core": "~9.1.11",
@@ -15,25 +23,27 @@
     "@angular/platform-browser": "~9.1.11",
     "@angular/platform-browser-dynamic": "~9.1.11",
     "@angular/router": "~9.1.11",
-    "@babel/parser": "^7.9.4",
-    "crownpeak-dxm-sdk-core": "^3.5.1",
-    "dotenv": "^8.2.0",
-    "rxjs": "~6.5.4",
-    "tslib": "^1.10.0",
-    "zone.js": "~0.10.2"
-  },
-  "bin": {
-    "crownpeak": "./classes/crownpeak/cmsify.js"
-  },
-  "devDependencies": {
     "@angular-devkit/build-angular": "~0.901.8",
-    "@angular/cli": "~9.1.8",
-    "@angular/compiler-cli": "~9.1.11",
+    "@babel/parser": "^7.9.4",
+    "dotenv": "^8.2.0",
     "mocha": "^8.2.0",
     "prettier": "^2.0.5",
+    "rxjs": "~6.5.4",
+    "tslib": "^1.10.0",
     "tslint": "^6.1.2",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.9.5"
+    "typescript": "^3.9.5",
+    "zone.js": "~0.10.2"
+  },
+  "peerDependencies": {
+    "@angular/animations": ">=9.0.0 <13.0.0",
+    "@angular/common": ">=9.0.0 <13.0.0",
+    "@angular/compiler": ">=9.0.0 <13.0.0",
+    "@angular/core": ">=9.0.0 <13.0.0",
+    "@angular/forms": ">=9.0.0 <13.0.0",
+    "@angular/platform-browser": ">=9.0.0 <13.0.0",
+    "@angular/platform-browser-dynamic": ">=9.0.0 <13.0.0",
+    "@angular/router": ">=9.0.0 <13.0.0"
   },
   "scripts": {
     "build": "tsc",
